@@ -4,7 +4,7 @@ module Aggcat
     BASE_URL = 'https://financialdatafeed.platform.intuit.com/rest-war/v1'
 
     def initialize(options={})
-      raise ArgumentError.new('customer_id is required for scoping all requests') if options[:customer_id].nil? || options[:customer_id].to_s.empty?
+      # raise ArgumentError.new('customer_id is required for scoping all requests') if options[:customer_id].nil? || options[:customer_id].to_s.empty?
       options[:open_timeout] ||= OPEN_TIMEOUT
       options[:read_timeout] ||= READ_TIMEOUT
       options[:verbose] ||= false
@@ -27,6 +27,12 @@ module Aggcat
       body = credentials(institution_id, username, password)
       post("/institutions/#{institution_id}/logins", body)
     end
+    
+    def discover_and_add_accounts_with_credentials(institution_id, credentials)
+      validate(institution_id: institution_id, credentials: credentials)
+      body = credentials_xml(credentials)
+      post("/institutions/#{institution_id}/logins", body)
+    end
 
     def account_confirmation(institution_id, challenge_session_id, challenge_node_id, answers)
       validate(institution_id: institution_id, challenge_node_id: challenge_session_id, challenge_node_id: challenge_node_id, answers: answers)
@@ -36,6 +42,10 @@ module Aggcat
 
     def accounts
       get('/accounts')
+    end
+    
+    def login_accounts(login_id)
+      get("/logins/#{login_id}/accounts")
     end
 
     def account(account_id)
@@ -127,15 +137,14 @@ module Aggcat
       institution = institution(institution_id)
       raise ArgumentError.new("institution_id #{institution_id} is invalid") if institution.nil? || institution[:result][:institution_detail].nil?
       keys = institution[:result][:institution_detail][:keys][:key].sort { |a, b| a[:display_order].to_i <=> b[:display_order].to_i }
-      hash = {
-          keys[0][:name] => username,
-          keys[1][:name] => password
-      }
-
+      credentials_xml(keys[0][:name] => username, keys[1][:name] => password)
+    end
+    
+    def credentials_xml(credentials)
       xml = Builder::XmlMarkup.new
       xml.InstitutionLogin('xmlns' => LOGIN_NAMESPACE) do |login|
         login.credentials('xmlns:ns1' => LOGIN_NAMESPACE) do
-          hash.each do |key, value|
+          credentials.each do |key, value|
             xml.tag!('ns1:credential', {'xmlns:ns2' => LOGIN_NAMESPACE}) do
               xml.tag!('ns2:name', key)
               xml.tag!('ns2:value', value)

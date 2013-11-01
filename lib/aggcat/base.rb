@@ -56,7 +56,7 @@ module Aggcat
       [params['oauth_token'][0], params['oauth_token_secret'][0]]
     end
 
-    def saml_message(user_id)
+    def saml_message(user_id = 'default')
       now = Time.now.utc
       reference_id = SecureRandom.uuid.gsub('-', '')
       assertion = %[<saml2:Assertion xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" ID="_#{reference_id}" IssueInstant="#{iso8601(now)}" Version="2.0"><saml2:Issuer>#{@issuer_id}</saml2:Issuer><saml2:Subject><saml2:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">#{user_id}</saml2:NameID><saml2:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"></saml2:SubjectConfirmation></saml2:Subject><saml2:Conditions NotBefore="#{iso8601(now-5*60)}" NotOnOrAfter="#{iso8601(now+10*60)}"><saml2:AudienceRestriction><saml2:Audience>#{@issuer_id}</saml2:Audience></saml2:AudienceRestriction></saml2:Conditions><saml2:AuthnStatement AuthnInstant="#{iso8601(now)}" SessionIndex="_#{reference_id}"><saml2:AuthnContext><saml2:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified</saml2:AuthnContextClassRef></saml2:AuthnContext></saml2:AuthnStatement></saml2:Assertion>]

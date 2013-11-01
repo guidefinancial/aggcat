@@ -16,7 +16,7 @@ module Aggcat
     end
 
     def client
-      raise ArgumentError.new('set the client scope first by calling Aggcat.scope(customer_id)') unless defined?(@customer_id)
+      # raise ArgumentError.new('set the client scope first by calling Aggcat.scope(customer_id)') unless defined?(@customer_id)
       @client
     end
 
