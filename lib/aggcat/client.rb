@@ -74,19 +74,25 @@ module Aggcat
       put("/logins/#{login_id}?refresh=true", challenge_answers(answers), headers)
     end
 
-    def update_account_type(account_id, account_type, category)
-      validate(account_id: account_id, account_type: account_type, category: category)
-      validate_account_type(account_type)
-      body = account_type_xml(account_type, category)
-      put("/accounts/#{account_id}", body)
+    def update_account_type(account_id, type)
+       validate(account_id: account_id, type: type)
+       body = account_type(type)
+       put("/accounts/#{account_id}", body)
     end
 
-    def account_type_xml(account_type, category)
-        sub_name = (account_type == "LoanAccount") ? "loanType" : "#{account_type.camelize(:lower)}Type"
-        "<ns1:#{account_type} xmlns:ns1='http://schema.intuit.com/platform/fdatafeed/#{account_type.downcase}/v1'>
-          <ns1:#{sub_name}>#{category.upcase}</ns1:#{sub_name}>
-        </ns1:#{account_type}>"  
-    end
+    # def update_account_type(account_id, account_type, category)
+    #   validate(account_id: account_id, account_type: account_type, category: category)
+    #   validate_account_type(account_type)
+    #   body = account_type_xml(account_type, category)
+    #   put("/accounts/#{account_id}", body)
+    # end
+
+    # def account_type_xml(account_type, category)
+    #     sub_name = (account_type == "LoanAccount") ? "loanType" : "#{account_type.camelize(:lower)}Type"
+    #     "<ns1:#{account_type} xmlns:ns1='http://schema.intuit.com/platform/fdatafeed/#{account_type.downcase}/v1'>
+    #       <ns1:#{sub_name}>#{category.upcase}</ns1:#{sub_name}>
+    #     </ns1:#{account_type}>"  
+    # end
 
     def delete_account(account_id)
       validate(account_id: account_id)
@@ -121,6 +127,32 @@ module Aggcat
 
     private
 
+    def account_type(type)
+      xml = Builder::XmlMarkup.new
+      if ['CHECKING', 'SAVINGS', 'MONEYMRKT', 'RECURRINGDEPOSIT', 'CD', 'CASHMANAGEMENT', 'OVERDRAFT'].include?(type)
+        xml.tag!('ns4:BankingAccount', {'xmlns:ns4' => BANKING_ACCOUNT_NAMESPACE}) do
+          xml.tag!('ns4:bankingAccountType', type)
+        end
+      elsif ['CREDITCARD', 'LINEOFCREDIT', 'OTHER'].include?(type)
+        xml.tag!('ns4:CreditAccount', {'xmlns:ns4' => CREDIT_ACCOUNT_NAMESPACE}) do
+          xml.tag!('ns4:creditAccountType', type)
+        end
+      elsif ['LOAN', 'AUTO', 'COMMERCIAL', 'CONSTR', 'CONSUMER', 'HOMEEQUITY', 'MILITARY', 'MORTGAGE', 'SMB', 'STUDENT'].include?(type)
+        xml.tag!('ns4:Loan', {'xmlns:ns4' => LOAN_NAMESPACE}) do
+          xml.tag!('ns4:loanType', type)
+        end
+      elsif ['TAXABLE', '401K', 'BROKERAGE', 'IRA', '403B', 'KEOGH', 'TRUST', 'TDA', 'SIMPLE', 'NORMAL', 'SARSEP', 'UGMA', 'OTHER'].include?(type)
+        xml.tag!('ns4:InvestmentAccount', {'xmlns:ns4' => INVESTMENT_ACCOUNT_NAMESPACE}) do
+          xml.tag!('ns4:investmentAccountType', type)
+        end
+      else
+        xml.tag!('ns4:RewardAccount', {'xmlns:ns4' => REWARD_ACCOUNT_NAMESPACE}) do
+          xml.tag!('ns4:rewardAccountType')
+        end
+      end
+    end
+
+
     def request(http_method, path, *options)
       tries = 0
       begin
@@ -147,11 +179,11 @@ module Aggcat
       end
     end
 
-    def validate_account_type(value)
-      if !["BankingAccount", "CreditAccount", "LoanAccount", "InvestmentAccount"].include? value
-        raise ArgumentError.new("A valid account type is required")
-      end
-    end    
+    # def validate_account_type(value)
+    #   if !["BankingAccount", "CreditAccount", "LoanAccount", "InvestmentAccount"].include? value
+    #     raise ArgumentError.new("A valid account type is required")
+    #   end
+    # end    
 
     def credentials(institution_id, username, password)
       institution = institution(institution_id)
