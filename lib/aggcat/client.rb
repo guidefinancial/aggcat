@@ -74,6 +74,19 @@ module Aggcat
       put("/logins/#{login_id}?refresh=true", challenge_answers(answers), headers)
     end
 
+    def update_account_type(account_id, account_type, category)
+      validate(account_id: account_id, account_type: account_type, category: category)
+      validate_account_type(account_type)
+      body = account_type_xml(account_type, category)
+      put("/accounts/#{account_id}", body)
+    end
+
+    def account_type_xml(account_type, category)
+        "<ns1:#{account_type} xmlns:ns1='http://schema.intuit.com/platform/fdatafeed/#{account_type.downcase}/v1'>
+          <ns1:#{account_type.camelize(:lower)}Type>#{category.upcase}</ns1:#{account_type.camelize(:lower)}Type>
+        </ns1:#{account_type}>"
+    end
+
     def delete_account(account_id)
       validate(account_id: account_id)
       delete("/accounts/#{account_id}")
@@ -132,6 +145,12 @@ module Aggcat
         end
       end
     end
+
+    def validate_account_type(value)
+      if !["BankingAccount", "CreditAccount", "Loan", "InvestmentAccount"].include? value
+        raise ArgumentError.new("A valid account type is required")
+      end
+    end    
 
     def credentials(institution_id, username, password)
       institution = institution(institution_id)
