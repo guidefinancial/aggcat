@@ -82,9 +82,10 @@ module Aggcat
     end
 
     def account_type_xml(account_type, category)
+        sub_name = (account_type == "LoanAccount") ? "loanType" : "#{account_type.camelize(:lower)}Type"
         "<ns1:#{account_type} xmlns:ns1='http://schema.intuit.com/platform/fdatafeed/#{account_type.downcase}/v1'>
-          <ns1:#{account_type.camelize(:lower)}Type>#{category.upcase}</ns1:#{account_type.camelize(:lower)}Type>
-        </ns1:#{account_type}>"
+          <ns1:#{sub_name}>#{category.upcase}</ns1:#{sub_name}>
+        </ns1:#{account_type}>"  
     end
 
     def delete_account(account_id)
@@ -147,7 +148,7 @@ module Aggcat
     end
 
     def validate_account_type(value)
-      if !["BankingAccount", "CreditAccount", "Loan", "InvestmentAccount"].include? value
+      if !["BankingAccount", "CreditAccount", "LoanAccount", "InvestmentAccount"].include? value
         raise ArgumentError.new("A valid account type is required")
       end
     end    
