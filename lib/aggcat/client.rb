@@ -43,7 +43,7 @@ module Aggcat
     def accounts
       get('/accounts')
     end
-    
+
     def login_accounts(login_id)
       get("/logins/#{login_id}/accounts")
     end
@@ -60,6 +60,11 @@ module Aggcat
         path += "&txnEndDate=#{end_date.strftime(DATE_FORMAT)}"
       end
       get(path)
+    end
+
+    def investment_positions(account_id)
+      validate(account_id: account_id)
+      get("/accounts/#{account_id}/positions")
     end
 
     def update_login(institution_id, login_id, username, password)
